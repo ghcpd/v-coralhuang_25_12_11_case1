@@ -1,0 +1,27 @@
+Execution transcript (test run)
+
+Waiting for server to start...
+PASS: v1 status code 200
+PASS: v1 has status field
+PASS: v1 has totalPrice field
+PASS: v1 has items field
+PASS: v2 without includeItems returns 200
+PASS: v2 has state
+PASS: v2 has amount
+PASS: v2 omits lineItems when includeItems is not true
+PASS: v2 does not expose old `items` field
+PASS: v2 includeItems=true returns 200
+PASS: v2 returns lineItems when includeItems=true
+PASS: lineItem contains name
+PASS: lineItem contains quantity
+PASS: v2 does not have status field
+PASS: v2 does not have totalPrice field
+PASS: v2 introduced FULFILLED state
+PASS: v1 deprecated path returns 410
+PASS: v1 deprecated returns API_VERSION_DEPRECATED
+PASS: analytics v2 still has state
+PASS: analytics v2 still has amount
+PASS: legacy UI naive items access throws as expected — KeyError
+
+Test summary: 21/21 passed
+Server stopped
