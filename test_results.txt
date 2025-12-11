@@ -1,0 +1,19 @@
+Running API migration compatibility tests:
+
+missing_includeItems_v2: missing_items_flagged: PASS
+missing_includeItems_v2: legacy_items_provided: PASS
+missing_includeItems_v2: items_not_nonempty: PASS
+analytics_uses_status_totalPrice: status_present: PASS
+analytics_uses_status_totalPrice: totalPrice_present: PASS
+items_vs_lineItems_mismatch: items_mapped_len: PASS
+items_vs_lineItems_mismatch: item_0_has_productName: PASS
+items_vs_lineItems_mismatch: item_0_has_qty: PASS
+items_vs_lineItems_mismatch: item_1_has_productName: PASS
+items_vs_lineItems_mismatch: item_1_has_qty: PASS
+deprecated_v1_monitored_as_outage: detected_deprecation: PASS
+deprecated_v1_monitored_as_outage: reason_present: PASS
+new_state_enum_breaks_legacy_enum: unknown_state_flagged: PASS
+new_state_enum_breaks_legacy_enum: mapped_state_fallback: PASS
+
+Summary:
+14/14 checks passed
