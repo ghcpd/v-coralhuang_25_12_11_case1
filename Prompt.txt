@@ -98,6 +98,7 @@ Provide runnable or pseudo-runnable automated test scripts (Python, Postman, or 
 - Exercise at least one new `state` value that would break old enums
 - Output clear, human-readable PASS/FAIL results for each test case
 
+You must actually run these tests in your environment and include the resulting test output (or a realistic execution transcript) as part of your final answer.
 ---
 
 # Final Output Must Include
