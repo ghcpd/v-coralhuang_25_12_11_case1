@@ -1,0 +1,112 @@
+You are an experienced backend and integration-focused professional software engineer.  
+You are responsible for analyzing and hardening an API migration that has already broken several legacy clients.
+
+# API Change
+
+This is an **API change regression scenario** caused by upgrading the order API from **`/api/v1/orders`** to **`/api/v2/orders`**.  
+The change introduces **new behavior and a new schema**, which creates backward-compatibility risks.
+
+The new API:
+
+- Adds a required query parameter **`includeItems`** (default `false`) that controls whether item details are returned.
+- Modifies several response fields:  
+  `status → state`, `totalPrice → amount`, and `items(productName, qty) → lineItems(name, quantity)`.
+- May completely omit `lineItems` when `includeItems` is not provided or is `false`.
+- Introduces new `state` values (for example `FULFILLED`) that did not exist in v1, so old enums may break.
+- Returns explicit deprecation metadata for `/api/v1/orders` (e.g., HTTP 410 or `API_VERSION_DEPRECATED` error), which may be misinterpreted as an outage by legacy monitoring.
+
+Older clients still rely on the v1 schema and semantics. They assume:
+
+- `items` always exists and is a non-empty array.
+- Fields `status` and `totalPrice` are present and stable.
+- Known status values map 1:1 to internal enums.
+- `/api/v1/orders` is a healthy endpoint and must return HTTP 200.
+
+These assumptions are no longer valid and are already causing null-pointer errors, missing-field crashes, incorrect analytics, and false alarms in monitoring.
+
+This problem is tested under the category **API change: outdated endpoint or schema mismatch**.
+
+---
+
+# What You Must Deliver
+
+### 1. API Call Evidence
+
+Provide realistic request and response examples for:
+
+- `/api/v1/orders`
+- `/api/v2/orders` without `includeItems`
+- `/api/v2/orders?includeItems=true`
+
+Highlight breaking changes and mismatched fields, including:
+
+- Missing `items` vs present `lineItems`
+- Renamed fields (`status`/`totalPrice` → `state`/`amount`)
+- New `state` values that legacy enums cannot handle
+- Deprecation behavior for `/api/v1/orders`
+
+### 2. Schema Comparison
+
+Summarize the old vs. new schema, noting renamed, removed, and added fields, and any changes in allowed values (e.g., new `state` enum values).  
+Identify which differences break compatibility and describe concrete fallback or mapping rules that a compatibility layer or client must implement.
+
+### 3. Client Impact Assessment
+
+Explain how old clients fail under v2.  
+Show concise error examples such as:
+
+- Missing fields and null item access
+- Enum mapping failures for new `state` values
+- Incorrect analytics due to renamed fields and changed semantics
+- Monitoring treating the deprecated v1 endpoint as a production outage
+
+Connect each failure back to a specific schema or behavior change.
+
+### 4. Regression Test Coverage
+
+Provide a compact but complete regression test plan that covers:
+
+- Field renaming validation (`status`/`totalPrice` → `state`/`amount`)
+- Behavior with and without `includeItems` (including the absence of `lineItems`)
+- Item-list safety handling in legacy-style clients
+- Analytics logic mapping and data integrity
+- Enum compatibility and handling of new `state` values
+- Backward-compatibility behavior when v1 is deprecated or removed
+
+Each test must include the test input, the expected output, and the failure conditions.
+
+### 5. README
+
+Deliver a short, precise README that explains:
+
+- The API change and the motivation for v2
+- The key compatibility risks
+- The schema differences
+- How to run the automated tests
+- What outcomes indicate that the migration is safe for legacy consumers
+
+The README should be suitable for use in a real engineering handoff or audit.
+
+### 6. Automated Tests
+
+Provide runnable or pseudo-runnable automated test scripts (Python, Postman, or similar) that:
+
+- Call both `/api/v1/orders` and `/api/v2/orders`
+- Validate field presence, renaming, and mapping rules
+- Detect missing or mismatched fields
+- Verify safe behavior when `includeItems` is absent or `false`
+- Exercise at least one new `state` value that would break old enums
+- Output clear, human-readable PASS/FAIL results for each test case
+
+---
+
+# Final Output Must Include
+
+1. API examples  
+2. Schema diff  
+3. Impact analysis  
+4. Regression test cases  
+5. README  
+6. Automated test scripts  
+
+Your response should be technically precise, concise, and directly usable to guide real-world regression hardening of this API migration.

@@ -1,0 +1,158 @@
+{
+  "error_cases": [
+    {
+      "id": "missing_includeItems_v2",
+      "description": "Legacy UI switched to /api/v2/orders but does not send includeItems; it still assumes items[] always exists.",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/orders",
+        "query": {
+          "userId": "123"
+        },
+        "headers": {
+          "X-Client": "legacy-web",
+          "Accept": "application/json"
+        }
+      },
+      "response": {
+        "statusCode": 200,
+        "body": {
+          "orderId": "ORD-123",
+          "state": "PAID",
+          "amount": 199.99
+          // lineItems is omitted because includeItems was not requested
+        }
+      },
+      "legacyClientExpectation": {
+        "expectedFields": ["orderId", "status", "totalPrice", "items"],
+        "itemsShape": {
+          "productName": "string",
+          "qty": "integer"
+        }
+      },
+      "failureLogExample": "TypeError: Cannot read properties of undefined (reading '0') at renderOrderSummary; expected 'items[0].productName' but 'items' is undefined."
+    },
+    {
+      "id": "analytics_uses_status_totalPrice",
+      "description": "Analytics job migrated to call /api/v2/orders but still reads status and totalPrice.",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/orders",
+        "query": {
+          "userId": "456",
+          "includeItems": "true"
+        },
+        "headers": {
+          "X-Client": "analytics-batch",
+          "Accept": "application/json"
+        }
+      },
+      "response": {
+        "statusCode": 200,
+        "body": {
+          "orderId": "ORD-456",
+          "state": "CANCELLED",
+          "amount": 0.0,
+          "lineItems": []
+        }
+      },
+      "legacyClientExpectation": {
+        "expectedFields": ["status", "totalPrice"],
+        "usage": "status used for per-status counters; totalPrice aggregated into revenue."
+      },
+      "failureLogExample": "KeyError: 'status' in aggregator.py:27 while reading order['status']; metrics 'orders_by_status' and 'revenue_total' drop to zero unexpectedly."
+    },
+    {
+      "id": "items_vs_lineItems_mismatch",
+      "description": "v2 correctly returns lineItems[], but the UI still iterates over items[] and expects productName/qty.",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/orders",
+        "query": {
+          "userId": "789",
+          "includeItems": "true"
+        },
+        "headers": {
+          "X-Client": "legacy-web",
+          "Accept": "application/json"
+        }
+      },
+      "response": {
+        "statusCode": 200,
+        "body": {
+          "orderId": "ORD-789",
+          "state": "SHIPPED",
+          "amount": 59.5,
+          "lineItems": [
+            { "name": "Pen", "quantity": 3 },
+            { "name": "Notebook", "quantity": 2 }
+          ]
+        }
+      },
+      "legacyClientExpectation": {
+        "expectedFields": ["items"],
+        "itemsShape": {
+          "productName": "string",
+          "qty": "integer"
+        }
+      },
+      "failureLogExample": "TypeError: Cannot read properties of undefined (reading 'forEach') at renderItems; order.items is undefined while order.lineItems is present."
+    },
+    {
+      "id": "deprecated_v1_monitored_as_outage",
+      "description": "Monitoring still calls /api/v1/orders and treats any non-200 as a production outage.",
+      "request": {
+        "method": "GET",
+        "path": "/api/v1/orders",
+        "query": {
+          "userId": "999"
+        },
+        "headers": {
+          "X-Client": "infra-monitor",
+          "Accept": "application/json"
+        }
+      },
+      "response": {
+        "statusCode": 410,
+        "body": {
+          "error": "API_VERSION_DEPRECATED",
+          "message": "Please migrate to /api/v2/orders"
+        }
+      },
+      "legacyClientExpectation": {
+        "expectedStatusCode": 200,
+        "interpretation": "Any non-200 is treated as 'orders API is down'."
+      },
+      "failureLogExample": "CRITICAL: orders API down; expected HTTP 200 from /api/v1/orders, got 410 with error 'API_VERSION_DEPRECATED'."
+    },
+    {
+      "id": "new_state_enum_breaks_legacy_enum",
+      "description": "v2 introduces new state value FULFILLED that does not exist in the legacy OrderStatus enum.",
+      "request": {
+        "method": "GET",
+        "path": "/api/v2/orders",
+        "query": {
+          "userId": "555",
+          "includeItems": "false"
+        },
+        "headers": {
+          "X-Client": "batch-importer",
+          "Accept": "application/json"
+        }
+      },
+      "response": {
+        "statusCode": 200,
+        "body": {
+          "orderId": "ORD-555",
+          "state": "FULFILLED",
+          "amount": 120.0
+        }
+      },
+      "legacyClientExpectation": {
+        "expectedStateEnumValues": ["PAID", "CANCELLED", "SHIPPED"],
+        "mappingStrategy": "OrderStatus.valueOf(state)"
+      },
+      "failureLogExample": "IllegalArgumentException: No enum constant OrderStatus.FULFILLED at OrderStatus.valueOf; record dropped and never imported into downstream system."
+    }
+  ]
+}
