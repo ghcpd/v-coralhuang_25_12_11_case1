@@ -20,7 +20,6 @@
           "orderId": "ORD-123",
           "state": "PAID",
           "amount": 199.99
-          // lineItems is omitted because includeItems was not requested
         }
       },
       "legacyClientExpectation": {
